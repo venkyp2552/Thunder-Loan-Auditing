@@ -3,7 +3,7 @@ pragma solidity 0.8.20;
 
 import { ITSwapPool } from "../interfaces/ITSwapPool.sol";
 import { IPoolFactory } from "../interfaces/IPoolFactory.sol";
-import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { Initializable } from "lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 
 contract OracleUpgradeable is Initializable {
     address private s_poolFactory;
