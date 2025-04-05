@@ -7,7 +7,7 @@ import { Initializable } from "lib/openzeppelin-contracts-upgradeable/contracts/
 
 contract OracleUpgradeable is Initializable {
     address private s_poolFactory;
-
+    //@audit-Info need to zero address check!
     function __Oracle_init(address poolFactoryAddress) internal onlyInitializing {
         __Oracle_init_unchained(poolFactoryAddress);
     }
@@ -16,8 +16,16 @@ contract OracleUpgradeable is Initializable {
         s_poolFactory = poolFactoryAddress;
     }
 
+    // omg we are callign an external contract
+    // what if the orice is manipulated?
+    // can i manipulate the price?
+    //  re0entrancy? 
+    // check the test ? //@audit-Informational you should use fork tst for this.
+
     function getPriceInWeth(address token) public view returns (uint256) {
         address swapPoolOfToken = IPoolFactory(s_poolFactory).getPool(token);
+        // e ignoring token decimals
+        // q what if the token decimals have 6> is the price wrong?
         return ITSwapPool(swapPoolOfToken).getPriceOfOnePoolTokenInWeth();
     }
 

@@ -1,4 +1,4 @@
-~391 nSLOC
+<!-- ~391 nSLOC
 
 ## Terms
 
@@ -9,3 +9,21 @@
    
 Slither
 Aderyn
+
+#My Views:
+1. IFalsLoanReceiver.sol file importing IThunderLoan.sol interface buts its used anywhere.
+2. Its used in MockFalshLoanReceiver file 
+   1.Here 
+import { IFlashLoanReceiver, IThunderLoan } from "../../src/interfaces/IFlashLoanReceiver.sol"; instead of this we should do like
+   import { IFlashLoanReceiver } from "../../src/interfaces/IFlashLoanReceiver.sol";
+   import { IThunderLoan } from "../../src/interfaces/IThunderLoan.sol";
+
+   2.
+
+
+# Potential attack Vectors 
+
+# Ideas
+
+# Questions
+Q: Why are we using TSwapPool.sol?What does that have to do with flash loans? -->

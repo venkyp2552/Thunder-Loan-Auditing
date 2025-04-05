@@ -9,6 +9,11 @@ contract DeployThunderLoan is Script {
     function run() public {
         vm.startBroadcast();
         ThunderLoan thunderLoan = new ThunderLoan();
+        //@audit-High try to deploy initlize function alsohere 
+        //Suggest : 
+        // bytes memory initData=abi.encodeWithSignature("initialize(address)","poolFactoryAddress");
+        // new ERC1967Proxy(address(thunderLoan),initData);
+
         new ERC1967Proxy(address(thunderLoan), "");
         vm.stopBroadcast();
     }
